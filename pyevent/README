@@ -2,10 +2,9 @@
 pyevent
 -------
 
-Python extension module for Niels Provos' libevent
-(http://monkey.org/~provos/libevent/).
+Python extension module for Niels Provos' libevent:
 
-original version by Martin Murray <murrayma@citi.umich.edu>.
+	http://monkey.org/~provos/libevent/
 
 -d.
 
