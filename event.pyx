@@ -80,8 +80,7 @@ cdef class event:
 
     Arguments:
 
-    callback -- user callback with (ev, handle, evtype, arg) prototype,
-                which can return a non-None value to be persistent
+    callback -- user callback with (ev, handle, evtype, arg) prototype
                 XXX - EV_SIGNAL events are always persistent
     arg      -- optional callback arguments
     evtype   -- bitmask of EV_READ or EV_WRITE, or EV_SIGNAL
