@@ -18,18 +18,35 @@ elif glob.glob('%s/lib/libevent.*' % sys.prefix):
                        library_dirs=[ '%s/lib' % sys.prefix ],
                        libraries=[ 'event' ])
 else:
-    l = glob.glob('../libevent*')
-    for dir in l:
+    ev_dir = None
+    for dir in glob.glob('../libevent*'):
         if os.path.isdir(dir):
-            print 'found libevent build directory', dir
-            event = Extension(name='event',
-                              sources=[ 'event.c' ],
-                              include_dirs = [ dir ],
-                              extra_objects = glob.glob('%s/*.o' % dir))
+            ev_dir = dir
             break
+    if not ev_dir:
+        raise "couldn't find libevent installation or build directory"
+    
+    print 'found libevent build directory', ev_dir
+    ev_srcs = [ 'event.c' ]
+    ev_incdirs = [ ev_dir ]
+    ev_extargs = []
+    ev_extobjs = []
+    
+    if sys.platform == 'win32':
+        ev_incdirs.extend([ '%s/WIN32-Code' % ev_dir,
+                            '%s/compat' % ev_dir ])
+        ev_srcs.extend([ '%s/%s' % (ev_dir, x) for x in [
+            'WIN32-Code/misc.c', 'WIN32-Code/win32.c',
+            'err.c', 'event.c', 'select.c' ]])
+        ev_extargs = [ '-DWIN32', '-DHAVE_CONFIG_H' ]
     else:
-        if not l:
-            raise "couldn't find libevent installation or build directory"
+        ev_extobjs = glob.glob('%s/*.o' % dir)
+
+    event = Extension(name='event',
+                      sources=ev_srcs,
+                      include_dirs=ev_incdirs,
+                      extra_compile_args=ev_extargs,
+                      extra_objects=ev_extobjs)
 
 setup(name='event',
       version='0.2',
