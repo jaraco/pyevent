@@ -15,6 +15,14 @@ specific event on a file handle, file descriptor, or signal occurs,
 or after a given time has passed.
 """
 
+__author__ = ( 'Dug Song <dugsong@monkey.org>',
+               'Martin Murray <mmurray@monkey.org>' )
+__copyright__ = ( 'Copyright (c) 2004 Dug Song',
+                  'Copyright (c) 2003 Martin Murray' )
+__license__ = 'BSD'
+__url__ = 'http://monkey.org/~dugsong/pyevent/'
+__version__ = '0.2'
+
 import sys
 
 cdef extern from "Python.h":
@@ -68,13 +76,18 @@ cdef void __event_handler(int fd, short evtype, void *arg):
 
 cdef class event:
     """event(callback, args=None, evtype=0, handle=None) -> event object
-
+    read(handle, callback, *args) -> event object
+    write(handle, callback, *args) -> event object
+    io(handle, callback, *args) -> event object
+    signal(sig, callback, *args) -> event object
+    timer(callback, *args) -> event object
+    
     Create a new event object with a user callback.
 
     Arguments:
 
-    callback -- user callback with (event, handle, evtype, args) prototype,
-                which can return a non-None value to be persistent
+    callback -- user callback with (*args) prototype, which can return a
+                non-None value to be persistent
                 XXX - EV_SIGNAL events are always persistent
     args     -- optional callback arguments
     evtype   -- bitmask of EV_READ or EV_WRITE, or EV_SIGNAL
