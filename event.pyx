@@ -29,6 +29,8 @@ cdef extern from "Python.h":
     void  Py_INCREF(object o)
     void  Py_DECREF(object o)
     
+ctypedef void (*event_handler)(int fd, short evtype, void *arg)
+    
 cdef extern from "event.h":
     struct timeval:
         unsigned int tv_sec
@@ -39,8 +41,6 @@ cdef extern from "event.h":
         int   ev_flags
         void *ev_arg
 
-    ctypedef void (*event_handler)(int fd, short evtype, void *arg)
-    
     void event_init()
     void event_set(event_t *ev, int fd, short event,
                    event_handler handler, void *arg)
