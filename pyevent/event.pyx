@@ -52,17 +52,11 @@ cdef extern from "event.h":
     int EVLOOP_ONCE
     int EVLOOP_NONBLOCK
 
-    int EV_TIMEOUT
-    int EV_READ
-    int EV_WRITE
-    int EV_SIGNAL
-    int EV_PERSIST
-    
-TIMEOUT = EV_TIMEOUT
-READ    = EV_READ
-WRITE   = EV_WRITE
-SIGNAL  = EV_SIGNAL
-PERSIST = EV_PERSIST
+EV_TIMEOUT = 0x01
+EV_READ    = 0x02
+EV_WRITE   = 0x04
+EV_SIGNAL  = 0x08
+EV_PERSIST = 0x10
 
 __event_exc = None
 
@@ -75,12 +69,7 @@ cdef void __event_handler(int fd, short evtype, void *arg):
     (<object>arg).__callback(evtype)
 
 cdef class event:
-    """event(callback, args=None, evtype=0, handle=None) -> event object
-    read(handle, callback, *args) -> event object
-    write(handle, callback, *args) -> event object
-    io(handle, callback, *args) -> event object
-    signal(sig, callback, *args) -> event object
-    timer(callback, *args) -> event object
+    """event(callback, arg=None, evtype=0, handle=None) -> event object
     
     Create a new event object with a user callback.
 
@@ -89,18 +78,18 @@ cdef class event:
     callback -- user callback with (*args) prototype, which can return a
                 non-None value to be persistent
                 XXX - EV_SIGNAL events are always persistent
-    args     -- optional callback arguments
+    arg      -- optional callback arguments
     evtype   -- bitmask of EV_READ or EV_WRITE, or EV_SIGNAL
-    handle   -- for EV_READ or EV_WRITE, a file handle or descriptor
+    handle   -- for EV_READ or EV_WRITE, a file handle, descriptor, or socket
                 for EV_SIGNAL, a signal number
     """
     cdef event_t ev
     cdef object handle, evtype, callback, args
-    cdef double timeout
+    cdef float timeout
 
-    def __init__(self, callback, args=None, short evtype=0, handle=-1):
+    def __init__(self, callback, arg=None, short evtype=0, handle=-1):
         self.callback = callback
-        self.args = args
+        self.args = arg
         self.evtype = evtype
         self.handle = handle
         if evtype == 0 and not handle:
@@ -113,29 +102,33 @@ cdef class event:
                 handle = handle.fileno()
             event_set(&self.ev, handle, evtype, __event_handler, <void *>self)
 
+    def __simple_callback(self, ev, handle, evtype, cbargs):
+        # XXX - simplified event callback wrapper
+        cdef timeval tv
+        
+        if cbargs[0](*cbargs[1:]):
+            if self.timeout >= 0.0:
+                tv.tv_sec = <long>self.timeout
+                tv.tv_usec = (self.timeout - <float>self.timeout) * 1000000.0
+                event_add(&self.ev, &tv)
+            else:
+                event_add(&self.ev, NULL)
+    
     def __callback(self, short evtype):
         cdef extern int event_gotsig
         cdef extern int (*event_sigcb)()
-        cdef timeval tv
         global __event_exc
         try:
-            self.evtype = evtype
-            if self.callback(*self.args):
-                if self.timeout:
-                    tv.tv_sec = <long>self.timeout
-                    tv.tv_usec = (self.timeout - <double>self.timeout) * \
-                                 1000000.0
-                    event_add(&self.ev, &tv)
-                else:
-                    event_add(&self.ev, NULL)
+            self.callback(self, self.handle, evtype, self.args)
         except:
             __event_exc = sys.exc_info()
             event_sigcb = __event_sigcb
             event_gotsig = 1
-        if not event_pending(&self.ev, EV_READ|EV_WRITE|EV_SIGNAL|EV_TIMEOUT, NULL):
+        if not event_pending(&self.ev, EV_READ|EV_WRITE|EV_SIGNAL|EV_TIMEOUT,
+                             NULL):
             Py_DECREF(self)
-    
-    def add(self, double timeout=0.0):
+
+    def add(self, float timeout=-1):
         """Add event to be executed after an optional timeout.
 
         Arguments:
@@ -144,12 +137,13 @@ cdef class event:
         """
         cdef timeval tv
 
-        if not event_pending(&self.ev, EV_READ|EV_WRITE|EV_SIGNAL|EV_TIMEOUT, NULL):
+        if not event_pending(&self.ev, EV_READ|EV_WRITE|EV_SIGNAL|EV_TIMEOUT,
+                             NULL):
             Py_INCREF(self)
         self.timeout = timeout
-        if timeout > 0.0:
+        if timeout >= 0.0:
             tv.tv_sec = <long>timeout
-            tv.tv_usec = (timeout - <double>timeout) * 1000000.0
+            tv.tv_usec = (timeout - <float>timeout) * 1000000.0
             event_add(&self.ev, &tv)
         else:
             event_add(&self.ev, NULL)
@@ -168,42 +162,83 @@ cdef class event:
         self.delete()
     
     def __repr__(self):
-        return '<event flags=0x%x, handle=%s, callback=%s, args=%s>' % \
+        return '<event flags=0x%x, handle=%s, callback=%s, arg=%s>' % \
                (self.ev.ev_flags, self.handle, self.callback, self.args)
 
-class read(event):
-    def __init__(self, handle, callback, *args):
-        event.__init__(self, callback, args, EV_READ, handle)
+cdef class read(event):
+    """read(handle, callback, *args) -> event object
+    
+    Simplified event interface:
+    Create a new read event, and add it to the event queue.
+    
+    Arguments:
 
-class write(event):
+    handle   -- file handle, descriptor, or socket
+    callback -- user callback with (*args) prototype, which can return
+                a non-None value to be rescheduled
+    *args    -- optional callback arguments
+    """
     def __init__(self, handle, callback, *args):
-        event.__init__(self, callback, args, EV_WRITE, handle)
+        event.__init__(self, self.__simple_callback, (callback,) + args,
+                       EV_READ, handle)
+        self.add()
 
-class io(event):
+cdef class write(event):
+    """write(handle, callback, *args) -> event object
+
+    Simplified event interface:
+    Create a new write event, and add it to the event queue.
+    
+    Arguments:
+
+    handle   -- file handle, descriptor, or socket
+    callback -- user callback with (*args) prototype, which can return
+                a non-None value to be rescheduled
+    *args    -- optional callback arguments
+    """
     def __init__(self, handle, callback, *args):
-        event.__init__(self, callback, args, EV_READ|EV_WRITE, handle)
+        event.__init__(self, self.__simple_callback, (callback,) + args,
+                       EV_WRITE, handle)
+        
+cdef class signal(event):
+    """signal(sig, callback, *args) -> event object
 
-class signal(event):
+    Simplified event interface:
+    Create a new signal event, and add it to the event queue.
+
+    Arguments:
+
+    sig      -- signal number
+    callback -- user callback with (*args) prototype, which can return
+                a non-None value to be rescheduled
+    *args    -- optional callback arguments
+    """
     def __init__(self, sig, callback, *args):
-        event.__init__(self, callback, args, EV_SIGNAL, sig)
+        event.__init__(self, self.__simple_callback,
+                       (callback,) + args, EV_SIGNAL, sig)
 
-class timer(event):
-    def __init__(self, callback, *args):
-        event.__init__(self, callback, args)
+cdef class timeout(event):
+    """timeout(timeout, callback, *args) -> event object
+
+    Simplified event interface:
+    Create a new timer event, and add it to the event queue.
+
+    Arguments:
+
+    timeout  -- event timeout in seconds
+    callback -- user callback with (*args) prototype, which can return
+                a non-None value to be rescheduled
+    *args    -- optional callback arguments
+    """
+    def __init__(self, secs, callback, *args):
+        event.__init__(self, self.__simple_callback, (callback,) + args)
+        self.add(secs)
 
 def init():
     """Initialize event queue."""
     if not __event_inited:
         event_init()
         __event_inited = 1
-
-def add(event ev, double timeout=0.0):
-    """Add the specified event to the event queue, with an optional timeout."""
-    ev.add(timeout)
-
-def delete(event ev):
-    """Delete the specified event."""
-    ev.delete()
 
 def dispatch():
     """Dispatch all events on the event queue."""
@@ -220,6 +255,14 @@ def loop(nonblock=False):
         flags = EVLOOP_ONCE|EVLOOP_NONBLOCK
     event_loop(flags)
 
+def abort():
+    """Abort event dispatch loop."""
+    cdef extern int event_gotsig
+    cdef extern int (*event_sigcb)()
+    event_sigcb = __event_sigcb
+    event_gotsig = 1
+
 if not __event_inited:
     # XXX - make sure event queue is always initialized.
+    # XXX XXX - if we do this here, EVENT_NOXXX need to be set before import!
     event_init()
