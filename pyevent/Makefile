@@ -8,6 +8,9 @@ event.c: event.pyx
 install:
 	python setup.py install
 
+test:
+	python test.py
+
 clean:
 	rm -rf build
 
