@@ -3,34 +3,36 @@
 # $Id$
 
 from distutils.core import setup, Extension
-import glob, sys
+import glob, os, sys
 
 if glob.glob('/usr/lib/libevent.*'):
     print 'found system libevent for', sys.platform
     event = Extension(name='event',
-                      sources=[ 'event.c' ],
-                      libraries=[ 'event' ])
+                       sources=[ 'event.c' ],
+                       libraries=[ 'event' ])
 elif glob.glob('%s/lib/libevent.*' % sys.prefix):
     print 'found installed libevent in', sys.prefix
     event = Extension(name='event',
-                      sources=[ 'event.c' ],
-                      include_dirs=[ '%s/include' % sys.prefix ],
-                      library_dirs=[ '%s/lib' % sys.prefix ],
-                      libraries=[ 'event' ])
+                       sources=[ 'event.c' ],
+                       include_dirs=[ '%s/include' % sys.prefix ],
+                       library_dirs=[ '%s/lib' % sys.prefix ],
+                       libraries=[ 'event' ])
 else:
     l = glob.glob('../libevent*')
-    if l:
-        libevent_dir = l[0]
-        print 'found libevent build directory', libevent_dir
-        event = Extension(name='event',
-                          sources=[ 'event.c' ],
-                          include_dirs = [ libevent_dir ],
-                          extra_objects = glob.glob('%s/*.o' % libevent_dir))
+    for dir in l:
+        if os.path.isdir(dir):
+            print 'found libevent build directory', dir
+            event = Extension(name='event',
+                              sources=[ 'event.c' ],
+                              include_dirs = [ dir ],
+                              extra_objects = glob.glob('%s/*.o' % dir))
+            break
     else:
-        raise "couldn't find libevent installation or build directory"
+        if not l:
+            raise "couldn't find libevent installation or build directory"
 
 setup(name='event',
-      version='0.1',
+      version='0.2',
       author='Dug Song, Martin Murray',
       url='http://monkey.org/~dugsong/pyevent',
       description='event library',
