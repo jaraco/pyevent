@@ -157,7 +157,7 @@ cdef class event:
         self.timeout = timeout
         if timeout >= 0.0:
             self.tv.tv_sec = <long>timeout
-            self.tv.tv_usec = (timeout - <float>timeout) * 1000000.0
+            self.tv.tv_usec = (timeout - <float>self.tv.tv_sec) * 1000000.0
             event_add(&self.ev, &self.tv)
         else:
             self.tv.tv_sec = self.tv.tv_usec = 0
