@@ -81,7 +81,6 @@ cdef class event:
     Arguments:
 
     callback -- user callback with (ev, handle, evtype, arg) prototype
-                XXX - EV_SIGNAL events are always persistent
     arg      -- optional callback arguments
     evtype   -- bitmask of EV_READ or EV_WRITE, or EV_SIGNAL
     handle   -- for EV_READ or EV_WRITE, a file handle, descriptor, or socket
@@ -106,11 +105,8 @@ cdef class event:
             handler = __event_handler
         if evtype == 0 and not handle:
             evtimer_set(&self.ev, handler, <void *>self)
-        elif evtype == EV_SIGNAL:
-            evtype = evtype | EV_PERSIST
-            event_set(&self.ev, handle, evtype, handler, <void *>self)
         else:
-            if type(handle) != int:
+            if not isinstance(handle, int):
                 handle = handle.fileno()
             event_set(&self.ev, handle, evtype, handler, <void *>self)
 
@@ -195,6 +191,7 @@ cdef class read(event):
     """
     def __init__(self, handle, callback, *args):
         event.__init__(self, callback, args, EV_READ, handle, simple=1)
+        self.args = args	# XXX - incref
         self.add()
 
 cdef class write(event):
@@ -212,6 +209,7 @@ cdef class write(event):
     """
     def __init__(self, handle, callback, *args):
         event.__init__(self, callback, args, EV_WRITE, handle, simple=1)
+        self.args = args	# XXX - incref
         self.add()
         
 cdef class signal(event):
@@ -219,7 +217,8 @@ cdef class signal(event):
 
     Simplified event interface:
     Create a new signal event, and add it to the event queue.
-
+    XXX - persistent event is added with EV_PERSIST, like signal_set()
+    
     Arguments:
 
     sig      -- signal number
@@ -228,7 +227,9 @@ cdef class signal(event):
     *args    -- optional callback arguments
     """
     def __init__(self, sig, callback, *args):
-        event.__init__(self, callback, args, EV_SIGNAL, sig, simple=1)
+        event.__init__(self, callback, args, EV_SIGNAL|EV_PERSIST,
+                       sig, simple=1)
+        self.args = args	# XXX - incref
         self.add()
 
 cdef class timeout(event):
@@ -246,6 +247,7 @@ cdef class timeout(event):
     """
     def __init__(self, secs, callback, *args):
         event.__init__(self, callback, args, simple=1)
+        self.args = args	# XXX - incref
         self.add(secs)
 
 def init():
