@@ -124,7 +124,9 @@ cdef class event:
             __event_exc = sys.exc_info()
             event_sigcb = __event_sigcb
             event_gotsig = 1
-        if not event_pending(&self.ev, EV_READ|EV_WRITE|EV_SIGNAL|EV_TIMEOUT, NULL):
+        # XXX - account for event.signal() EV_PERSIST
+        if not (evtype & EV_SIGNAL) and \
+           not event_pending(&self.ev, EV_READ|EV_WRITE|EV_SIGNAL|EV_TIMEOUT, NULL):
             Py_DECREF(self)
     
     def __callback(self, short evtype):
@@ -233,14 +235,14 @@ cdef class signal(event):
         self.add()
 
 cdef class timeout(event):
-    """timeout(timeout, callback, *args) -> event object
+    """timeout(secs, callback, *args) -> event object
 
     Simplified event interface:
     Create a new timer event, and add it to the event queue.
 
     Arguments:
 
-    timeout  -- event timeout in seconds
+    secs     -- event timeout in seconds
     callback -- user callback with (*args) prototype, which can return
                 a non-None value to be rescheduled
     *args    -- optional callback arguments
