@@ -62,8 +62,6 @@ EV_PERSIST = 0x10
 
 __event_exc = None
 
-cdef int __event_inited
-
 cdef int __event_sigcb():
     return -1
 
@@ -254,9 +252,7 @@ cdef class timeout(event):
 
 def init():
     """Initialize event queue."""
-    if not __event_inited:
-        event_init()
-        __event_inited = 1
+    event_init()
 
 def dispatch():
     """Dispatch all events on the event queue."""
@@ -280,7 +276,5 @@ def abort():
     event_sigcb = __event_sigcb
     event_gotsig = 1
 
-if not __event_inited:
-    # XXX - make sure event queue is always initialized.
-    # XXX XXX - if we do this here, EVENT_NOXXX need to be set before import!
-    event_init()
+# XXX - make sure event queue is always initialized.
+init()
