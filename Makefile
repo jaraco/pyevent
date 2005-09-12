@@ -12,7 +12,7 @@ test:
 	python test.py
 
 clean:
-	rm -rf build
+	rm -rf build dist
 
 cleandir distclean: clean
 	rm -f *.c *~
