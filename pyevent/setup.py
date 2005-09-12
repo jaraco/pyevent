@@ -51,7 +51,7 @@ else:
                       extra_objects=ev_extobjs)
 
 setup(name='event',
-      version='0.2',
+      version='0.3',
       author='Dug Song, Martin Murray',
       url='http://monkey.org/~dugsong/pyevent',
       description='event library',
