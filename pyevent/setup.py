@@ -19,7 +19,9 @@ elif glob.glob('%s/lib/libevent.*' % sys.prefix):
                        libraries=[ 'event' ])
 else:
     ev_dir = None
-    for dir in glob.glob('../libevent*'):
+    l = glob.glob('../libevent*')
+    l.reverse()
+    for dir in l:
         if os.path.isdir(dir):
             ev_dir = dir
             break
