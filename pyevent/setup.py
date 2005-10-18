@@ -55,7 +55,8 @@ else:
 
 setup(name='event',
       version='0.3',
-      author='Dug Song, Martin Murray',
+      author='Dug Song',
+      author_email='dugsong@monkey.org',
       url='http://monkey.org/~dugsong/pyevent',
       description='event library',
       ext_modules = [ event ])
