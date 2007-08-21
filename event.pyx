@@ -153,7 +153,7 @@ cdef class event:
         self.timeout = timeout
         if timeout >= 0.0:
             self.tv.tv_sec = <long>timeout
-            self.tv.tv_usec = (timeout - <float>self.tv.tv_sec) * 1000000.0
+            self.tv.tv_usec = <unsigned int>((timeout - <float>self.tv.tv_sec) * 1000000.0)
             event_add(&self.ev, &self.tv)
         else:
             self.tv.tv_sec = self.tv.tv_usec = 0
@@ -255,19 +255,22 @@ def init():
     event_init()
 
 def dispatch():
-    """Dispatch all events on the event queue."""
+    """Dispatch all events on the event queue.
+    Returns -1 on error, 0 on success, and 1 if no events are registered.
+    """
     global __event_exc
-    event_dispatch()
+    return event_dispatch()
     if __event_exc:
         raise __event_exc[0], __event_exc[1], __event_exc[2]
 
 def loop(nonblock=False):
-    """Dispatch all pending events on queue in a single pass."""
+    """Dispatch all pending events on queue in a single pass.
+    Returns -1 on error, 0 on success, and 1 if no events are registered."""
     cdef int flags
     flags = EVLOOP_ONCE
     if nonblock:
         flags = EVLOOP_ONCE|EVLOOP_NONBLOCK
-    event_loop(flags)
+    return event_loop(flags)
 
 def abort():
     """Abort event dispatch loop."""
