@@ -1,4 +1,9 @@
 
+event-0.4:
+
+- update loop() and dispatch() to return status, as requested by
+  edfaulkner@gmail.com
+
 event-0.3:
 
 - fix reference counting for callback arguments passed via
