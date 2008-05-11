@@ -6,7 +6,7 @@ URL	= `egrep url setup.py | cut -f2 -d"'"`
 all: event.c
 	$(PYTHON) setup.py build
 
-event.c: event.pyx bufferevent.pxi evdns.pxi evhttp.pxi simple.pxi
+event.c: event.pyx bufferevent.pxi evdns.pxi simple.pxi
 	pyrexc event.pyx
 
 install:
