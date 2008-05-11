@@ -68,6 +68,36 @@ class EventTest(unittest.TestCase):
         event.read(pipe[0], __read2_cb, pipe[0], msg)
         os.write(pipe[1], msg)
         event.dispatch()
+
+    def test_exception(self):
+        print 'test_exception'
+        def __bad_cb(foo):
+            raise NotImplementedError, foo
+        event.timeout(0, __bad_cb, 'bad callback')
+        try:
+            event.dispatch()
+        except NotImplementedError:
+            pass
+
+    def test_abort(self):
+        print 'test_abort'
+        def __time_cb():
+            raise NotImplementedError, 'abort failed!'
+        event.timeout(5, __time_cb)
+        event.timeout(1, event.abort)
+        event.dispatch()
+
+    def test_callback_exception(self):
+        def __raise_cb(exc):
+            raise exc
+        def __raise_catch_cb(exc):
+            try:
+                raise exc
+            except:
+                pass
+        event.timeout(0, __raise_cb, StandardError())
+        event.timeout(0, __raise_catch_cb, Exception())
+        self.assertRaises(StandardError, event.dispatch)
         
 if __name__ == '__main__':
     unittest.main()

@@ -25,10 +25,16 @@ __version__ = '0.3'
 
 import sys
 
+cdef extern from "sys/types.h":
+    ctypedef unsigned char u_char
+
 cdef extern from "Python.h":
-    void  Py_INCREF(object o)
-    void  Py_DECREF(object o)
-    
+    void   Py_INCREF(object o)
+    void   Py_DECREF(object o)
+    object PyString_FromStringAndSize(char *v, int len)
+    object PyString_FromString(char *v)
+    int    PyObject_AsCharBuffer(object obj, char **buffer, int *buffer_len)
+
 ctypedef void (*event_handler)(int fd, short evtype, void *arg)
     
 cdef extern from "event.h":
@@ -50,7 +56,7 @@ cdef extern from "event.h":
     int  event_dispatch()
     int  event_loop(int loop)
     int  event_pending(event_t *ev, short, timeval *tv)
-
+    
     int EVLOOP_ONCE
     int EVLOOP_NONBLOCK
 
@@ -65,10 +71,21 @@ __event_exc = None
 cdef int __event_sigcb():
     return -1
 
-cdef void __event_handler(int fd, short evtype, void *arg):
+cdef void __event_abort():
+    global __event_exc
+    cdef extern int event_gotsig
+    cdef extern int (*event_sigcb)()
+    
+    __event_exc = sys.exc_info()
+    if __event_exc[0] is None:
+        __event_exc = None
+    event_sigcb = __event_sigcb
+    event_gotsig = 1
+
+cdef void __event_handler(int fd, short evtype, void *arg) with gil:
     (<object>arg).__callback(evtype)
 
-cdef void __simple_event_handler(int fd, short evtype, void *arg):
+cdef void __simple_event_handler(int fd, short evtype, void *arg) with gil:
     (<object>arg).__simple_callback(evtype)
 
 cdef class event:
@@ -109,9 +126,6 @@ cdef class event:
             event_set(&self.ev, handle, evtype, handler, <void *>self)
 
     def __simple_callback(self, short evtype):
-        cdef extern int event_gotsig
-        cdef extern int (*event_sigcb)()
-        global __event_exc
         try:
             if self.callback(*self.args) != None:
                 if self.tv.tv_sec or self.tv.tv_usec:
@@ -119,24 +133,17 @@ cdef class event:
                 else:
                     event_add(&self.ev, NULL)
         except:
-            __event_exc = sys.exc_info()
-            event_sigcb = __event_sigcb
-            event_gotsig = 1
+            __event_abort()
         # XXX - account for event.signal() EV_PERSIST
         if not (evtype & EV_SIGNAL) and \
            not event_pending(&self.ev, EV_READ|EV_WRITE|EV_SIGNAL|EV_TIMEOUT, NULL):
             Py_DECREF(self)
     
     def __callback(self, short evtype):
-        cdef extern int event_gotsig
-        cdef extern int (*event_sigcb)()
-        global __event_exc
         try:
             self.callback(self, self.handle, evtype, self.args)
         except:
-            __event_exc = sys.exc_info()
-            event_sigcb = __event_sigcb
-            event_gotsig = 1
+            __event_abort()
         if not event_pending(&self.ev, EV_READ|EV_WRITE|EV_SIGNAL|EV_TIMEOUT, NULL):
             Py_DECREF(self)
 
@@ -176,80 +183,6 @@ cdef class event:
         return '<event flags=0x%x, handle=%s, callback=%s, arg=%s>' % \
                (self.ev.ev_flags, self.handle, self.callback, self.args)
 
-cdef class read(event):
-    """read(handle, callback, *args) -> event object
-    
-    Simplified event interface:
-    Create a new read event, and add it to the event queue.
-    
-    Arguments:
-
-    handle   -- file handle, descriptor, or socket
-    callback -- user callback with (*args) prototype, which can return
-                a non-None value to be rescheduled
-    *args    -- optional callback arguments
-    """
-    def __init__(self, handle, callback, *args):
-        event.__init__(self, callback, args, EV_READ, handle, simple=1)
-        self.args = args	# XXX - incref
-        self.add()
-
-cdef class write(event):
-    """write(handle, callback, *args) -> event object
-
-    Simplified event interface:
-    Create a new write event, and add it to the event queue.
-    
-    Arguments:
-
-    handle   -- file handle, descriptor, or socket
-    callback -- user callback with (*args) prototype, which can return
-                a non-None value to be rescheduled
-    *args    -- optional callback arguments
-    """
-    def __init__(self, handle, callback, *args):
-        event.__init__(self, callback, args, EV_WRITE, handle, simple=1)
-        self.args = args	# XXX - incref
-        self.add()
-        
-cdef class signal(event):
-    """signal(sig, callback, *args) -> event object
-
-    Simplified event interface:
-    Create a new signal event, and add it to the event queue.
-    XXX - persistent event is added with EV_PERSIST, like signal_set()
-    
-    Arguments:
-
-    sig      -- signal number
-    callback -- user callback with (*args) prototype, which can return
-                a non-None value to be rescheduled
-    *args    -- optional callback arguments
-    """
-    def __init__(self, sig, callback, *args):
-        event.__init__(self, callback, args, EV_SIGNAL|EV_PERSIST,
-                       sig, simple=1)
-        self.args = args	# XXX - incref
-        self.add()
-
-cdef class timeout(event):
-    """timeout(secs, callback, *args) -> event object
-
-    Simplified event interface:
-    Create a new timer event, and add it to the event queue.
-
-    Arguments:
-
-    secs     -- event timeout in seconds
-    callback -- user callback with (*args) prototype, which can return
-                a non-None value to be rescheduled
-    *args    -- optional callback arguments
-    """
-    def __init__(self, secs, callback, *args):
-        event.__init__(self, callback, args, simple=1)
-        self.args = args	# XXX - incref
-        self.add(secs)
-
 def init():
     """Initialize event queue."""
     event_init()
@@ -258,26 +191,48 @@ def dispatch():
     """Dispatch all events on the event queue.
     Returns -1 on error, 0 on success, and 1 if no events are registered.
     """
+    cdef int ret
     global __event_exc
-    return event_dispatch()
+    with nogil:
+        ret = event_dispatch()
     if __event_exc:
-        raise __event_exc[0], __event_exc[1], __event_exc[2]
+        t = __event_exc
+        __event_exc = None
+        raise t[0], t[1], t[2]
+    return ret
 
 def loop(nonblock=False):
     """Dispatch all pending events on queue in a single pass.
     Returns -1 on error, 0 on success, and 1 if no events are registered."""
-    cdef int flags
+    cdef int flags, ret
     flags = EVLOOP_ONCE
     if nonblock:
         flags = EVLOOP_ONCE|EVLOOP_NONBLOCK
-    return event_loop(flags)
+    with nogil:
+        ret = event_loop(flags)
+    if __event_exc:
+        t = __event_exc
+        __event_exc = None
+        raise t[0], t[1], t[2]
+    return ret
 
 def abort():
     """Abort event dispatch loop."""
-    cdef extern int event_gotsig
-    cdef extern int (*event_sigcb)()
-    event_sigcb = __event_sigcb
-    event_gotsig = 1
+    __event_abort()
+
+include "simple.pxi"
+
+include "bufferevent.pxi"
+
+include "evdns.pxi"
+
+#include "evhttp.pxi"
+
+# XXX - use select() on MacOS X
+IF UNAME_SYSNAME == "Darwin":
+    import os
+    os.putenv('EVENT_NOPOLL', '1')
+    os.putenv('EVENT_NOKQUEUE', '1')
 
 # XXX - make sure event queue is always initialized.
 init()

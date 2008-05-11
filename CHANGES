@@ -1,4 +1,15 @@
 
+event-0.5:
+
+- fix handling of the Global Interpreter Lock; events now work with threads!
+  (event base support is next)
+
+- fix Leopard build (issue 8)
+
+- support basic bufferevent API (issue 10)
+
+- support basic evdns API
+
 event-0.4:
 
 - update loop() and dispatch() to return status, as requested by
