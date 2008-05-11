@@ -21,7 +21,7 @@ __copyright__ = ( 'Copyright (c) 2004 Dug Song',
                   'Copyright (c) 2003 Martin Murray' )
 __license__ = 'BSD'
 __url__ = 'http://monkey.org/~dugsong/pyevent/'
-__version__ = '0.3'
+__version__ = '0.4'
 
 import sys
 
