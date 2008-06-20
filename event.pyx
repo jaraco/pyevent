@@ -53,8 +53,8 @@ cdef extern from "event.h":
     void evtimer_set(event_t *ev, event_handler handler, void *arg)
     int  event_add(event_t *ev, timeval *tv)
     int  event_del(event_t *ev)
-    int  event_dispatch()
-    int  event_loop(int loop)
+    int  event_dispatch() nogil
+    int  event_loop(int loop) nogil
     int  event_pending(event_t *ev, short, timeval *tv)
     
     int EVLOOP_ONCE
