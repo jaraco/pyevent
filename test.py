@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import glob, os, signal, sys, time, unittest
+import glob, os, signal, sys, thread, time, unittest
 sys.path.insert(0, glob.glob('./build/lib.*')[0])
 import event
 
@@ -88,6 +88,7 @@ class EventTest(unittest.TestCase):
         event.dispatch()
 
     def test_callback_exception(self):
+        print 'test_callback_exception'
         def __raise_cb(exc):
             raise exc
         def __raise_catch_cb(exc):
@@ -98,6 +99,19 @@ class EventTest(unittest.TestCase):
         event.timeout(0, __raise_cb, StandardError())
         event.timeout(0, __raise_catch_cb, Exception())
         self.assertRaises(StandardError, event.dispatch)
-        
+
+    def test_thread(self):
+        print 'test_thread'
+        def __time_cb(d):
+            assert d['count'] == 3
+        def __time_thread(count, d):
+            for i in range(count):
+                time.sleep(1)
+                d['count'] += 1
+        d = { 'count': 0 }
+        thread.start_new_thread(__time_thread, (3, d))
+        event.timeout(4, __time_cb, d)
+        event.dispatch()
+
 if __name__ == '__main__':
     unittest.main()
