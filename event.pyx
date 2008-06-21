@@ -226,7 +226,7 @@ include "bufferevent.pxi"
 
 include "evdns.pxi"
 
-#include "evhttp.pxi"
+include "evhttp.pxi"
 
 # XXX - use select() on MacOS X
 IF UNAME_SYSNAME == "Darwin":
