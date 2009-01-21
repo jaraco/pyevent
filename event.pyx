@@ -228,11 +228,5 @@ include "evdns.pxi"
 
 include "evhttp.pxi"
 
-# XXX - use select() on MacOS X
-IF UNAME_SYSNAME == "Darwin":
-    import os
-    os.putenv('EVENT_NOPOLL', '1')
-    os.putenv('EVENT_NOKQUEUE', '1')
-
 # XXX - make sure event queue is always initialized.
 init()
