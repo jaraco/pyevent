@@ -190,7 +190,15 @@ cdef void __path_handler(evhttp_request *req, void *arg) with gil:
     start_response.end()
 
 cdef class wsgi:
-    """WSGI/1.0 application server."""
+    """wsgi(address='0.0.0.0', port=80) -> WSGI server object
+
+    Create a WSGI/1.0 application server object.
+
+    Arguments:
+
+    address -- IP address to bind to (defaults to any)
+    port    -- port to listen on (defaults to 80)
+    """
     cdef evhttp_t *_http
     
     def __init__(self, address='0.0.0.0', port=80):
@@ -199,12 +207,26 @@ cdef class wsgi:
             raise OSError, 'bind'	# XXX - libevent should event_warn
     
     def register_app(self, path, app):
+        """Register a WSGI application
+
+        Arguments:
+
+        path -- URI path for the application to be bound to
+        app  -- WSGI application object
+        """
         evhttp_set_cb(self._http, path, __path_handler, <void *>app)
 
     def unregister_app(self, path):
+        """Unregister a WSGI application
+
+        Arguments:
+
+        path -- URI path of bound WSGI application
+        """
         evhttp_del_cb(self._http, path)
 
     def run(self):
+        """Run WSGI server."""
         import signal as _signal
         signal(_signal.SIGINT, abort)
         signal(_signal.SIGTERM, abort)
