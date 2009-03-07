@@ -151,6 +151,7 @@ cdef class __wsgi_input:
 cdef void __path_handler(evhttp_request *req, void *arg) with gil:
     cdef __start_response start_response
     cdef __wsgi_input wsgi_input
+    cdef char *content_type, *content_len, *host
 
     app = (<object>arg)
     if app is None:
@@ -159,6 +160,21 @@ cdef void __path_handler(evhttp_request *req, void *arg) with gil:
     start_response._set_req(req)
     wsgi_input = __wsgi_input()
     wsgi_input._set_buf(req.input_buffer)
+    content_type = evhttp_find_header(req.input_headers, 'Content-Type')
+    if not content_type: content_type = ''
+    content_len = evhttp_find_header(req.input_headers, 'Content-Length')
+    if not content_len: content_len = ''
+    host = evhttp_find_header(req.input_headers, 'Host')
+    if not host:
+        server_name = ''
+        server_port = '80'
+    else:
+        l = host.split(':')
+        server_name = l[0]
+        if len(l) > 1:
+            server_port = l[1]
+        else:
+            server_port = '80'
     environ = {
         # WSGI/1.0
         'wsgi.version': (1,0),
@@ -173,18 +189,15 @@ cdef void __path_handler(evhttp_request *req, void *arg) with gil:
         'SCRIPT_NAME': req.uri,
         'PATH_INFO': '',
         'QUERY_STRING':'',
-        'CONTENT_TYPE':
-            evhttp_find_header(req.input_headers, 'Content-Type') or '',
-        'CONTENT_LENGTH':
-            evhttp_find_header(req.input_headers, 'Content-Length') or '',
-        'SERVER_NAME':
-            evhttp_find_header(req.input_headers, 'Host') or '', # XXX
-        'SERVER_PORT':80, # XXX
+        'CONTENT_TYPE': content_type,
+        'CONTENT_LENGTH': content_len,
+        'SERVER_NAME': server_name,
+        'SERVER_PORT': server_port,
         'SERVER_PROTOCOL':'HTTP/%s.%s' % (req.major, req.minor),
         'REMOTE_HOST': req.remote_host, # XXX
         # Extras
         'REMOTE_ADDR': req.remote_host,
-        'REMOTE_PORT': req.remote_port,
+        'REMOTE_PORT': '%d' % req.remote_port,
         }
     for buf in app(environ, start_response):
         if buf:
