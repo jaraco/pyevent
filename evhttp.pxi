@@ -57,6 +57,8 @@ cdef extern from "evhttp.h":
     evhttp_t *evhttp_start(char *address, unsigned short port)
     void      evhttp_set_cb(evhttp_t *http, char *uri,
                            evhttp_handler handler, void *arg)
+    void      evhttp_set_gencb(evhttp_t *http,
+                           evhttp_handler handler, void *arg)
     void      evhttp_del_cb(evhttp_t *http, char *uri)
     void      evhttp_send_reply_start(evhttp_request *req,
                                       int status, char *reason)
@@ -215,6 +217,15 @@ cdef class wsgi:
         app  -- WSGI application object
         """
         evhttp_set_cb(self._http, path, __path_handler, <void *>app)
+
+    def register_default_app(self, app):
+        """Register a default WSGI application
+
+        Arguments:
+
+        app  -- WSGI application object
+        """
+        evhttp_set_gencb(self._http, __path_handler, <void *>app)
 
     def unregister_app(self, path):
         """Unregister a WSGI application
