@@ -1,4 +1,8 @@
 
+- fix exception handling in loop(), from Denis Bilenko
+
+- add default WSGI handler, from Phoenix Sol <phoenix@burninglabs.com>
+
 event-0.4:
 
 - fix handling of the Global Interpreter Lock; events now work with threads!
