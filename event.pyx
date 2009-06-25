@@ -205,6 +205,7 @@ def loop(nonblock=False):
     """Dispatch all pending events on queue in a single pass.
     Returns -1 on error, 0 on success, and 1 if no events are registered."""
     cdef int flags, ret
+    global __event_exc
     flags = EVLOOP_ONCE
     if nonblock:
         flags = EVLOOP_ONCE|EVLOOP_NONBLOCK
