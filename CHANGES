@@ -1,3 +1,7 @@
+- use event_loopexit() to break on exception, introduced in
+  libevent-1.4.1-beta, from Luciano Bello <luciano@debian.org>
+
+- don't restrict MacOS X to select() (issue 17)
 
 - fix exception handling in loop(), from Denis Bilenko
 

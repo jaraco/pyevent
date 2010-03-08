@@ -55,6 +55,7 @@ cdef extern from "event.h":
     int  event_del(event_t *ev)
     int  event_dispatch() nogil
     int  event_loop(int loop) nogil
+    int  event_loopbreak()
     int  event_pending(event_t *ev, short, timeval *tv)
     
     int EVLOOP_ONCE
@@ -68,19 +69,13 @@ EV_PERSIST = 0x10
 
 __event_exc = None
 
-cdef int __event_sigcb():
-    return -1
-
 cdef void __event_abort():
     global __event_exc
-    cdef extern int event_gotsig
-    cdef extern int (*event_sigcb)()
-    
+
+    event_loopbreak()
     __event_exc = sys.exc_info()
     if __event_exc[0] is None:
         __event_exc = None
-    event_sigcb = __event_sigcb
-    event_gotsig = 1
 
 cdef void __event_handler(int fd, short evtype, void *arg) with gil:
     (<object>arg).__callback(evtype)
