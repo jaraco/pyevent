@@ -1,13 +1,19 @@
+# $Id$
 
-PYTHON	= DISTUTILS_USE_SDK=1 MSSdk=1 python2.5
+PYTHON ?= python
+#PYTHON	= DISTUTILS_USE_SDK=1 MSSdk=1 python2.5
+#CONFIG_ARGS = --with-libevent=$(HOME)/build/libevent-1.4.4
+
+PYREXC ?= cython
+
 PKGDIR	= pyevent-`egrep version setup.py | cut -f2 -d"'"`
-URL	= `egrep url setup.py | cut -f2 -d"'"`
 
 all: event.c
+	$(PYTHON) setup.py config $(CONFIG_ARGS)
 	$(PYTHON) setup.py build
 
 event.c: event.pyx bufferevent.pxi evdns.pxi evhttp.pxi simple.pxi
-	pyrexc event.pyx
+	$(PYREXC) event.pyx
 
 install:
 	$(PYTHON) setup.py install
@@ -28,7 +34,9 @@ pkg_osx:
 	mv $(PKGDIR) dist
 
 clean:
+	$(PYTHON) setup.py clean
 	rm -rf build dist
 
 cleandir distclean: clean
+	$(PYTHON) setup.py clean -a
 	rm -f *.c *~
