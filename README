@@ -6,6 +6,11 @@ Python extension module for Niels Provos' libevent:
 
 	http://monkey.org/~provos/libevent/
 
+Prerequisites:
+
+	- libevent-1.4.1-beta or newer
+	- Cython-0.10.3 or newer
+
 -d.
 
 ---
