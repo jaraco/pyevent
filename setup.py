@@ -2,64 +2,68 @@
 #
 # $Id$
 
-from distutils.core import setup, Extension
-import glob, os, sys
+import distutils.core
+import glob
+import os
+import sys
+import warnings
 
-if glob.glob('/usr/lib/libevent.*'):
-    print 'found system libevent for', sys.platform
-    event = Extension(name='event',
-                       sources=[ 'event.c' ],
-                       libraries=[ 'event' ])
-elif glob.glob('%s/lib/libevent.*' % sys.prefix):
-    print 'found installed libevent in', sys.prefix
-    event = Extension(name='event',
-                       sources=[ 'event.c' ],
-                       include_dirs=[ '%s/include' % sys.prefix ],
-                       library_dirs=[ '%s/lib' % sys.prefix ],
-                       libraries=[ 'event' ])
-else:
-    ev_dir = None
-    l = glob.glob('../libevent*')
-    l.reverse()
-    for dir in l:
-        if os.path.isdir(dir):
-            ev_dir = dir
-            break
-    if not ev_dir:
+LIBEVENT_BUILD_DIR = '../libevent*'
+
+def get_best_build_dir():
+    candidates = reversed(glob.glob(LIBEVENT_BUILD_DIR))
+    matches = (dir for dir in candidates if os.path.isdir(dir))
+    try:
+        best = next(matches)
+        print 'found libevent build directory', ev_dir
+    except StopIteration:
         raise RuntimeError("couldn't find libevent installation or build directory")
+        best = '../libevent'
+    return best
 
-    print 'found libevent build directory', ev_dir
-    ev_srcs = [ 'event.c' ]
-    ev_incdirs = [ ev_dir ]
-    ev_extargs = []
-    ev_extobjs = []
-    ev_libraries = []
+def get_extension():
+    event = distutils.core.Extension(name='event', sources=['event.c'])
+    if glob.glob('/usr/lib/libevent.*'):
+        print 'found system libevent for', sys.platform
+        event.libraries=['event']
+        return event
+    elif glob.glob('%s/lib/libevent.*' % sys.prefix):
+        print 'found installed libevent in', sys.prefix
+        event.include_dirs=['%s/include' % sys.prefix]
+        event.library_dirs=['%s/lib' % sys.prefix]
+        event.libraries=['event']
+        return event
+
+    ev_dir = get_best_build_dir()
+    event.include_dirs.append(ev_dir)
 
     if sys.platform == 'win32':
-        ev_incdirs.extend([ '%s/WIN32-Code' % ev_dir,
-                            '%s/compat' % ev_dir ])
-        ev_srcs.extend([ '%s/%s' % (ev_dir, x) for x in [
-            'WIN32-Code/misc.c', 'WIN32-Code/win32.c',
-            'log.c', 'event.c' ]])
-        ev_extargs = [ '-DWIN32', '-DHAVE_CONFIG_H' ]
-        ev_libraries = [ 'wsock32' ]
+        event.include_dirs.extend([
+            '%(ev_dir)s/WIN32-Code' % vars(),
+            '%(ev_dir)s/compat' % vars()
+        ])
+        sources = ['WIN32-Code/misc.c', 'WIN32-Code/win32.c', 'log.c', 'event.c']
+        sources = [os.path.join(ev_dir, source) for source in sources]
+        event.sources.extend(sources)
+        event.extra_compile_args.extend(['-DWIN32', '-DHAVE_CONFIG_H'])
+        event.libraries.append('wsock32')
     else:
-        ev_extobjs = glob.glob('%s/*.o' % dir)
+        event.extra_objects.extend(glob.glob('%(ev_dir)s/*.o' % vars()))
 
-    event = Extension(name='event',
-                      sources=ev_srcs,
-                      include_dirs=ev_incdirs,
-                      extra_compile_args=ev_extargs,
-                      extra_objects=ev_extobjs,
-                      libraries=ev_libraries)
+    return event
 
-setup(name='event',
-      version='0.4',
-      author='Dug Song',
-      author_email='dugsong@monkey.org',
-      url='http://monkey.org/~dugsong/pyevent/',
-      description='event library',
-      long_description="""This module provides a mechanism to execute a function when a specific event on a file handle, file descriptor, or signal occurs, or after a given time has passed.""",
-      license='BSD',
-      download_url='http://monkey.org/~dugsong/pyevent/',
-      ext_modules = [ event ])
+setup_params = dict(
+    name='event',
+    version='0.4',
+    author='Dug Song',
+    author_email='dugsong@monkey.org',
+    url='http://monkey.org/~dugsong/pyevent/',
+    description='event library',
+    long_description="""This module provides a mechanism to execute a function when a specific event on a file handle, file descriptor, or signal occurs, or after a given time has passed.""",
+    license='BSD',
+    download_url='http://monkey.org/~dugsong/pyevent/',
+    ext_modules = [get_extension()],
+)
+
+if __name__ == '__main__':
+    distutils.core.setup(**setup_params)
