@@ -26,15 +26,15 @@ else:
             ev_dir = dir
             break
     if not ev_dir:
-        raise "couldn't find libevent installation or build directory"
-    
+        raise RuntimeError("couldn't find libevent installation or build directory")
+
     print 'found libevent build directory', ev_dir
     ev_srcs = [ 'event.c' ]
     ev_incdirs = [ ev_dir ]
     ev_extargs = []
     ev_extobjs = []
     ev_libraries = []
-    
+
     if sys.platform == 'win32':
         ev_incdirs.extend([ '%s/WIN32-Code' % ev_dir,
                             '%s/compat' % ev_dir ])
