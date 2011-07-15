@@ -17,7 +17,7 @@ def get_best_build_dir():
         best = next(matches)
         print 'found libevent build directory', ev_dir
     except StopIteration:
-        raise RuntimeError("couldn't find libevent installation or build directory")
+        warnings.warn("Could not find libevent")
         best = '../libevent'
     return best
 
