@@ -54,14 +54,13 @@ def get_extension():
 
 setup_params = dict(
     name='event',
-    version='0.4',
+    version='0.4b1',
     author='Dug Song',
     author_email='dugsong@monkey.org',
-    url='http://monkey.org/~dugsong/pyevent/',
+    url='https://bitbucket.org/jaraco/pyevent',
     description='event library',
     long_description="""This module provides a mechanism to execute a function when a specific event on a file handle, file descriptor, or signal occurs, or after a given time has passed.""",
     license='BSD',
-    download_url='http://monkey.org/~dugsong/pyevent/',
     ext_modules = [get_extension()],
 )
 
