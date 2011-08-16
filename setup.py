@@ -57,9 +57,11 @@ def get_extension():
 
 setup_params = dict(
     name='event',
-    version='0.4b1',
+    version='0.4',
     author='Dug Song',
     author_email='dugsong@monkey.org',
+    maintainer='Jason R. Coombs',
+    maintainer_email='jaraco@jaraco.com',
     url='https://bitbucket.org/jaraco/pyevent',
     description='event library',
     long_description="""This module provides a mechanism to execute a function when a specific event on a file handle, file descriptor, or signal occurs, or after a given time has passed.""",
