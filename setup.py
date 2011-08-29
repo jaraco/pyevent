@@ -45,7 +45,7 @@ def get_extension():
             '%(ev_dir)s/WIN32-Code' % vars(),
             '%(ev_dir)s/compat' % vars()
         ])
-        sources = ['WIN32-Code/misc.c', 'WIN32-Code/win32.c', 'log.c', 'event.c']
+        sources = ['WIN32-Code/win32.c', 'log.c', 'event.c']
         sources = [os.path.join(ev_dir, source) for source in sources]
         event.sources.extend(sources)
         event.extra_compile_args.extend(['-DWIN32', '-DHAVE_CONFIG_H'])
