@@ -18,7 +18,7 @@ def get_best_build_dir():
     matches = (dir for dir in candidates if os.path.isdir(dir))
     try:
         best = next(matches)
-        print 'found libevent build directory', ev_dir
+        print 'found libevent build directory', best
     except StopIteration:
         warnings.warn("Could not find libevent")
         best = '../libevent'
