@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-import glob, os, signal, sys, thread, time, unittest
+import glob
+import os
+import signal
+import sys
+import thread
+import time
+import unittest
 
 """
 # skip code, disabled due to odd raise in Cython code
@@ -35,8 +41,10 @@ class EventTest(unittest.TestCase):
         unittest2 does NOT work under Python 2.2.
         Could potentially use nose or py.test which has (previously)
         supported Python 2.2
-          * nose http://python-nose.googlecode.com/svn/wiki/NoseWithPython2_2.wiki
-          * py.test http://codespeak.net/pipermail/py-dev/2005-February/000203.html
+          * nose
+            http://python-nose.googlecode.com/svn/wiki/NoseWithPython2_2.wiki
+          * py.test
+            http://codespeak.net/pipermail/py-dev/2005-February/000203.html
         """
         if unittest2:
             raise unittest2.SkipTest(reason)
@@ -51,7 +59,7 @@ class EventTest(unittest.TestCase):
             self.call_back_ran = True
             assert int(now - ts['start']) == ts['secs'], 'timeout failed'
         print 'test_timeout'
-        ts = { 'start':time.time(), 'secs':5 }
+        ts = {'start': time.time(), 'secs': 5}
         ev = event.event(__timeout_cb, arg=ts)
         ev.add(ts['secs'])
         event.dispatch()
@@ -71,6 +79,7 @@ class EventTest(unittest.TestCase):
         if not hasattr(signal, 'SIGUSR1'):
             self.skip('signal.SIGUSR1 missing (probably Windows)')
         else:
+            
             def __signal_cb(ev, sig, evtype, arg):
                 if evtype == event.EV_SIGNAL:
                     ev.delete()
@@ -86,6 +95,7 @@ class EventTest(unittest.TestCase):
         if not hasattr(signal, 'SIGUSR1'):
             self.skip('signal.SIGUSR1 missing (probably Windows)')
         else:
+            
             def __signal2_cb(sig):
                 if sig:
                     event.abort()
@@ -122,6 +132,7 @@ class EventTest(unittest.TestCase):
 
     def test_exception(self):
         print 'test_exception'
+        
         def __bad_cb(foo):
             raise NotImplementedError(foo)
         event.timeout(0, __bad_cb, 'bad callback')
@@ -133,6 +144,7 @@ class EventTest(unittest.TestCase):
 
     def test_abort(self):
         print 'test_abort'
+        
         def __time_cb():
             raise NotImplementedError('abort failed!')
         event.timeout(5, __time_cb)
@@ -141,8 +153,10 @@ class EventTest(unittest.TestCase):
 
     def test_callback_exception(self):
         print 'test_callback_exception'
+        
         def __raise_cb(exc):
             raise exc
+        
         def __raise_catch_cb(exc):
             try:
                 raise exc
@@ -156,15 +170,17 @@ class EventTest(unittest.TestCase):
         self.call_back_ran_a = False
         self.call_back_ran_b = False
         print 'test_thread'
+        
         def __time_cb(d):
             self.call_back_ran_a = True
             assert d['count'] == 3
+        
         def __time_thread(count, d):
             self.call_back_ran_b = True
             for i in range(count):
                 time.sleep(1)
                 d['count'] += 1
-        d = { 'count': 0 }
+        d = {'count': 0}
         thread.start_new_thread(__time_thread, (3, d))
         event.timeout(4, __time_cb, d)
         event.dispatch()
