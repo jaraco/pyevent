@@ -30,12 +30,13 @@ def get_extension():
         print 'found system libevent for', sys.platform
         event.libraries=['event']
         return event
-    elif glob.glob('%s/lib/libevent.*' % sys.prefix):
-        print 'found installed libevent in', sys.prefix
-        event.include_dirs=['%s/include' % sys.prefix]
-        event.library_dirs=['%s/lib' % sys.prefix]
-        event.libraries=['event']
-        return event
+    for prefix in (sys.prefix, "/usr/local", "/opt/local"):
+        if glob.glob("%s/lib/libevent.*" % prefix):
+            print 'found installed libevent in', prefix
+            event.include_dirs=['%s/include' % prefix]
+            event.library_dirs=['%s/lib' % prefix]
+            event.libraries=['event']
+            return event
 
     ev_dir = get_best_build_dir()
     event.include_dirs.append(ev_dir)
