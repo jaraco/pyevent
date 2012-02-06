@@ -9,7 +9,7 @@ Python extension module for Niels Provos' libevent:
 
 Build dependencies:
 
-	- libevent-1.4.1-beta or newer
+	- libevent-1.4.X
 
 Optional (only required to regenerate event.c if you modify \*.pyx):
 
