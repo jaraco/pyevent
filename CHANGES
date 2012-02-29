@@ -1,3 +1,5 @@
+event-0.4:
+
 - use event_loopexit() to break on exception, introduced in
   libevent-1.4.1-beta, from Luciano Bello <luciano@debian.org>
 
@@ -6,8 +8,6 @@
 - fix exception handling in loop(), from Denis Bilenko
 
 - add default WSGI handler, from Phoenix Sol <phoenix@burninglabs.com>
-
-event-0.4:
 
 - fix handling of the Global Interpreter Lock; events now work with threads!
   (event base support is next)
@@ -27,5 +27,3 @@ event-0.3:
   "simple" interface
 
 - fix self decref for persistent signal event
-
-# $Id$
