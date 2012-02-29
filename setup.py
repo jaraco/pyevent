@@ -28,14 +28,14 @@ def get_extension():
     event = Extension(name='event', sources=['event.c'])
     if glob.glob('/usr/lib/libevent.*'):
         print 'found system libevent for', sys.platform
-        event.libraries=['event']
+        event.libraries = ['event']
         return event
     for prefix in (sys.prefix, "/usr/local", "/opt/local"):
         if glob.glob("%s/lib/libevent.*" % prefix):
             print 'found installed libevent in', prefix
-            event.include_dirs=['%s/include' % prefix]
-            event.library_dirs=['%s/lib' % prefix]
-            event.libraries=['event']
+            event.include_dirs = ['%s/include' % prefix]
+            event.library_dirs = ['%s/lib' % prefix]
+            event.libraries = ['event']
             return event
 
     ev_dir = get_best_build_dir()
