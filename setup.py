@@ -58,7 +58,7 @@ def get_extension():
 
 setup_params = dict(
     name='event',
-    version='0.4',
+    version='0.4.2',
     author='Dug Song',
     author_email='dugsong@monkey.org',
     maintainer='Jason R. Coombs',
