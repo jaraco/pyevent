@@ -1,15 +1,14 @@
 #!/usr/bin/env python
-#
-# $Id$
 
-try:
-    from setuptools import setup, Extension
-except ImportError:
-    from distutils.core import setup, Extension
 import glob
 import os
 import sys
 import warnings
+
+try:
+    import setuptools
+except ImportError:
+    import distutils.core as setuptools
 
 LIBEVENT_BUILD_DIR = '../libevent*'
 
@@ -25,7 +24,7 @@ def get_best_build_dir():
     return best
 
 def get_extension():
-    event = Extension(name='event', sources=['event.c'])
+    event = setuptools.Extension(name='event', sources=['event.c'])
     if glob.glob('/usr/lib/libevent.*'):
         print 'found system libevent for', sys.platform
         event.libraries = ['event']
@@ -71,4 +70,4 @@ setup_params = dict(
 )
 
 if __name__ == '__main__':
-    setup(**setup_params)
+    setuptools.setup(**setup_params)
