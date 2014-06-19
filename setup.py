@@ -29,6 +29,10 @@ def get_extension():
         print 'found system libevent for', sys.platform
         event.libraries = ['event']
         return event
+    elif glob.glob('/usr/lib64/libevent.*'):
+        print 'found system libevent for', sys.platform
+        event.libraries = ['event']
+        return event
     for prefix in (sys.prefix, "/usr/local", "/opt/local"):
         if glob.glob("%s/lib/libevent.*" % prefix):
             print 'found installed libevent in', prefix
