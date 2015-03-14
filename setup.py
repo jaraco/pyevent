@@ -4,6 +4,7 @@ import glob
 import os
 import sys
 import warnings
+import itertools
 
 try:
     import setuptools
@@ -25,11 +26,11 @@ def get_best_build_dir():
 
 def get_extension():
     event = setuptools.Extension(name='event', sources=['event.c'])
-    if glob.glob('/usr/lib/libevent.*'):
-        print 'found system libevent for', sys.platform
-        event.libraries = ['event']
-        return event
-    elif glob.glob('/usr/lib64/libevent.*'):
+    system_libs = itertools.chain(
+    	glob.iglob('/usr/lib/libevent.*'),
+    	glob.iglob('/usr/lib64/libevent.*'),
+    )
+    if any(system_libs):
         print 'found system libevent for', sys.platform
         event.libraries = ['event']
         return event
