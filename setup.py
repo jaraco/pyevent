@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import glob
 import os
 import sys
@@ -18,7 +20,7 @@ def get_best_build_dir():
     matches = (dir for dir in candidates if os.path.isdir(dir))
     try:
         best = next(matches)
-        print 'found libevent build directory', best
+        print('found libevent build directory', best)
     except StopIteration:
         warnings.warn("Could not find libevent")
         best = '../libevent'
@@ -31,12 +33,12 @@ def get_extension():
     	glob.iglob('/usr/lib64/libevent.*'),
     )
     if any(system_libs):
-        print 'found system libevent for', sys.platform
+        print('found system libevent for', sys.platform)
         event.libraries = ['event']
         return event
     for prefix in (sys.prefix, "/usr/local", "/opt/local"):
         if glob.glob("%s/lib/libevent.*" % prefix):
-            print 'found installed libevent in', prefix
+            print('found installed libevent in', prefix)
             event.include_dirs = ['%s/include' % prefix]
             event.library_dirs = ['%s/lib' % prefix]
             event.libraries = ['event']
