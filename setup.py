@@ -47,8 +47,8 @@ def get_extension():
 
     if sys.platform == 'win32':
         event.include_dirs.extend([
-            '%(ev_dir)s/WIN32-Code' % vars(),
-            '%(ev_dir)s/compat' % vars()
+            '%(ev_dir)s/WIN32-Code' % locals(),
+            '%(ev_dir)s/compat' % locals()
         ])
         sources = ['WIN32-Code/win32.c', 'log.c', 'event.c']
         sources = [os.path.join(ev_dir, source) for source in sources]
@@ -56,7 +56,7 @@ def get_extension():
         event.extra_compile_args.extend(['-DWIN32', '-DHAVE_CONFIG_H'])
         event.libraries.append('wsock32')
     else:
-        event.extra_objects.extend(glob.glob('%(ev_dir)s/*.o' % vars()))
+        event.extra_objects.extend(glob.glob('%(ev_dir)s/*.o' % locals()))
 
     return event
 
